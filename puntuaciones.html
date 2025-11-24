@@ -27,41 +27,158 @@
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
 
     <h2 class="title2">Puntuaciones</h2>
-    <table>
-        <tr>
-            <th>Jugador</th>
-            <th>Puntos</th>
-        </tr>
-        <tr>
-            <td>Jugador 1</td>
-            <td>2500</td>
-        </tr>
-        <tr>
-            <td>Jugador 2</td>
-            <td>1800</td>
-        </tr>
-        <tr>
-            <td>Jugador 3</td>
-            <td>1200</td>
-        </tr>
-        <tr>
-            <td>Jugador 4</td>
-            <td>950</td>
-        </tr>
+
+    <div style="margin-top: 40px;">
+        <label style="font-size: 1.4em;">Dificultad:</label>
+        <select id="select-dificultad" class="btnAuto">
+            <option value="facil">Fácil</option>
+            <option value="dificil">Difícil</option>
+        </select>
+
+        <label style="font-size: 1.4em; margin-left: 20px;">Nivel:</label>
+        <select id="select-nivel" class="btnAuto">
+            <option value="1">Nivel 1</option>
+            <option value="2">Nivel 2</option>
+            <option value="3">Nivel 3</option>
+        </select>
+
+        <button id="btn-load" class="btnAuto" style="margin-left: 20px;">
+            Cargar
+        </button>
+    </div>
+
+    <table id="scores-table">
+        <thead>
+            <tr>
+                <th>Jugador</th>
+                <th>Esmeraldas</th>
+                <th>Diamantes</th>
+                <th>Tiempo</th>
+                <th>Puntos</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody id="scores-body">
+            <tr>
+                <td colspan="6">Selecciona dificultad y nivel.</td>
+            </tr>
+        </tbody>
     </table>
-    
+
+    <script>
+        const API_URL = (function () {
+            return "http://localhost:3000/scores";
+        })();
+
+        const btnLoad = document.getElementById("btn-load");
+        const selectDificultad = document.getElementById("select-dificultad");
+        const selectNivel = document.getElementById("select-nivel");
+        const tbody = document.getElementById("scores-body");
+
+        btnLoad.addEventListener("click", loadScores);
+
+        // Cargar automáticamente la combinación por defecto al abrir la página
+        window.addEventListener("DOMContentLoaded", () => {
+            loadScores();
+        });
+
+        async function loadScores() {
+            const dificultad = selectDificultad.value;
+            const nivel = selectNivel.value;
+
+            tbody.innerHTML = `<tr><td colspan="6">Cargando...</td></tr>`;
+
+            // timeout sencillo usando AbortController
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
+            try {
+                const res = await fetch(`${API_URL}/${encodeURIComponent(dificultad)}/${encodeURIComponent(nivel)}`, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" },
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!res.ok) {
+                    console.error("Respuesta no OK:", res.status, await res.text());
+                    tbody.innerHTML = `<tr><td colspan="6">Error del servidor (${res.status}).</td></tr>`;
+                    return;
+                }
+
+                const data = await res.json();
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6">No hay registros.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = "";
+
+                data.forEach((row, index) => {
+                    const tr = document.createElement("tr");
+
+                    // seguridad mínima: valores por defecto si faltan
+                    const username = row.username || "Jugador";
+                    const photo = row.photo_url || "Img/default.png";
+                    const esmeraldas = (row.esmeraldas !== undefined) ? row.esmeraldas : "-";
+                    const diamantes = (row.diamantes !== undefined) ? row.diamantes : "-";
+                    const tiempo = (row.tiempo_final !== null && row.tiempo_final !== undefined) ? row.tiempo_final : "-";
+                    const puntos = (row.puntos !== undefined) ? row.puntos : "-";
+                    const fecha = row.created_at ? new Date(row.created_at).toLocaleString() : "-";
+
+                    tr.innerHTML = `
+                <td style="text-align:left;">
+                    <img src="${escapeHtml(photo)}"
+                        style="width:40px;height:40px;border-radius:50%;vertical-align:middle;margin-right:10px;">
+                    ${escapeHtml(username)}
+                </td>
+                <td>${esmeraldas}</td>
+                <td>${diamantes}</td>
+                <td>${tiempo}</td>
+                <td>${puntos}</td>
+                <td>${fecha}</td>
+            `;
+
+                    // destacar top3 (opcional)
+                    if (index === 0) tr.style.background = "linear-gradient(90deg, rgba(255,215,0,0.12), rgba(255,215,0,0.04))";
+                    else if (index === 1) tr.style.background = "linear-gradient(90deg, rgba(192,192,192,0.08), transparent)";
+                    else if (index === 2) tr.style.background = "linear-gradient(90deg, rgba(205,127,50,0.06), transparent)";
+
+                    tbody.appendChild(tr);
+                });
+
+            } catch (err) {
+                if (err.name === "AbortError") {
+                    tbody.innerHTML = `<tr><td colspan="6">La petición tardó demasiado y fue cancelada.</td></tr>`;
+                } else {
+                    console.error("Error obteniendo leaderboard:", err);
+                    tbody.innerHTML = `<tr><td colspan="6">Error obteniendo leaderboard.</td></tr>`;
+                }
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        }
+
+        // pequeña función para escapar HTML en valores inyectados
+        function escapeHtml(unsafe) {
+            return String(unsafe)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+    </script>
+
     <div id="fb-root"></div>
     <script async defer crossorigin="anonymous"
         src="https://connect.facebook.net/es_LA/sdk.js#xfbml=1&version=v24.0&appId=2062336774513098"></script>
 
-    <div 
-        class="fb-share-button" 
-        data-href="https://cecil-untrailed-bifilarly.ngrok-free.dev/puntuaciones.html" 
-        data-layout="" 
-        data-size="">
-        <a href="index.html" class="btn">Volver al Menú</a> 
-        <a 
-            target="_blank"
+    <div class="fb-share-button" data-href="https://cecil-untrailed-bifilarly.ngrok-free.dev/puntuaciones.html"
+        data-layout="" data-size="">
+        <a href="index.html" class="btn">Volver al Menú</a>
+        <a target="_blank"
             href="https://www.facebook.com/sharer/sharer.php?u=https://cecil-untrailed-bifilarly.ngrok-free.dev/puntuaciones.html"
             class="fb-xfbml-parse-ignore btnFacebook">
             Compartir

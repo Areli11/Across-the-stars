@@ -3,6 +3,7 @@ import { loadModel } from '../core/assets.js';
 import { gameState } from '../core/gameState.js';
 import { input } from '../core/input.js';
 import { playExplosion, playCoin, playSpeed, playHealing, playWin } from '../systems/sfx.js';
+import { enviarPuntos } from "../api/enviarPuntos.js";
 
 export async function loadLevel1(scene, physics) {
 
@@ -119,8 +120,8 @@ export async function loadLevel1(scene, physics) {
   // ::::::::::::::: ESCENARIO
   //-----------------------------------------------------
   let mercuryOrbit = null;
-  let venusOrbit   = null;
-  let moonOrbit    = null;
+  let venusOrbit = null;
+  let moonOrbit = null;
 
   const scenery = [];
 
@@ -173,7 +174,7 @@ export async function loadLevel1(scene, physics) {
   // Lo metemos al sistema pero sin velocidad, solo rotación
   addScenery(mercury, {
     speedZ: 0,
-    rotY: 0.005, 
+    rotY: 0.005,
     rotZ: 0.02     // roto suave en Y
   });
 
@@ -186,7 +187,7 @@ export async function loadLevel1(scene, physics) {
   // Lo metemos al sistema pero sin velocidad, solo rotación
   addScenery(venus, {
     speedZ: 0,
-    rotY: 0.005, 
+    rotY: 0.005,
     rotZ: 0.02     // roto suave en Y
   });
   // EARTH → rota mientras se mueve hacia el jugador
@@ -202,12 +203,12 @@ export async function loadLevel1(scene, physics) {
   });
 
   // ---- ÓRBITAS ALREDEDOR DEL SOL ----
-// Calculamos radio y ángulo inicial de Mercurio respecto al Sol
+  // Calculamos radio y ángulo inicial de Mercurio respecto al Sol
   {
     const dx = mercury.position.x - sun.position.x;
     const dz = mercury.position.z - sun.position.z;
     const radius = Math.hypot(dx, dz);
-    const angle  = Math.atan2(dz, dx);
+    const angle = Math.atan2(dz, dx);
 
     mercuryOrbit = {
       radius,
@@ -222,7 +223,7 @@ export async function loadLevel1(scene, physics) {
     const dx = venus.position.x - sun.position.x;
     const dz = venus.position.z - sun.position.z;
     const radius = Math.hypot(dx, dz);
-    const angle  = Math.atan2(dz, dx);
+    const angle = Math.atan2(dz, dx);
 
     venusOrbit = {
       radius,
@@ -232,7 +233,7 @@ export async function loadLevel1(scene, physics) {
     };
   }
 
-      //:::::::Escenario: Asteroides
+  //:::::::Escenario: Asteroides
   const asteroid = await loadModel('/models/Asteroides/Asteroide1.glb');
   const asteroid1 = await loadModel('/models/Asteroides/Asteroide2.glb');
   const asteroid2 = await loadModel('/models/Asteroides/Asteroide3.glb');
@@ -244,7 +245,7 @@ export async function loadLevel1(scene, physics) {
   const asteroid8 = await loadModel('/models/Asteroides/Asteroide9.glb');
   const asteroid9 = await loadModel('/models/Asteroides/Asteroide10.glb');
   const voyager = await loadModel('/models/Level1/Voyager.glb');
-  
+
   asteroid.scale.setScalar(1);
   asteroid1.scale.setScalar(1);
   asteroid2.scale.setScalar(1);
@@ -282,63 +283,63 @@ export async function loadLevel1(scene, physics) {
   scene.add(voyager);
 
   addScenery(asteroid, {
-    speedZ: 0.04,  
-    rotY: 0.02       
+    speedZ: 0.04,
+    rotY: 0.02
   });
-    addScenery(asteroid1, {
-    speedZ: 0.04,  
-    rotY: 0.02       
+  addScenery(asteroid1, {
+    speedZ: 0.04,
+    rotY: 0.02
   });
-    addScenery(asteroid2, {
-    speedZ: 0.04,  
-    rotY: 0.02       
+  addScenery(asteroid2, {
+    speedZ: 0.04,
+    rotY: 0.02
   });
-    addScenery(asteroid3, {
-    speedZ: 0.04,  
-    rotY: 0.02       
+  addScenery(asteroid3, {
+    speedZ: 0.04,
+    rotY: 0.02
   });
-    addScenery(asteroid4, {
-    speedZ: 0.04,  
-    rotY: 0.02       
+  addScenery(asteroid4, {
+    speedZ: 0.04,
+    rotY: 0.02
   });
-    addScenery(asteroid5, {
-    speedZ: 0.04,  
-    rotY: 0.02       
+  addScenery(asteroid5, {
+    speedZ: 0.04,
+    rotY: 0.02
   });
-      addScenery(asteroid6, {
-    speedZ: 0.04,  
-    rotY: 0.02       
+  addScenery(asteroid6, {
+    speedZ: 0.04,
+    rotY: 0.02
   });
-      addScenery(asteroid7, {
-    speedZ: 0.04,  
-    rotY: 0.02       
+  addScenery(asteroid7, {
+    speedZ: 0.04,
+    rotY: 0.02
   });
-      addScenery(asteroid8, {
-    speedZ: 0.04,  
-    rotY: 0.02       
+  addScenery(asteroid8, {
+    speedZ: 0.04,
+    rotY: 0.02
   });
-      addScenery(asteroid9, {
-    speedZ: 0.04,  
-    rotY: 0.02       
+  addScenery(asteroid9, {
+    speedZ: 0.04,
+    rotY: 0.02
   });
-    addScenery(voyager, {
-    speedZ: 0.020,  
-    rotY: 0.01       
+  addScenery(voyager, {
+    speedZ: 0.020,
+    rotY: 0.01
   });
 
   // ---- META FINAL ----
- async function spawnMeta() {
+  async function spawnMeta() {
 
     if (metaSpawned) return;
     metaSpawned = true;
-    
 
-   // ---- META ----
+
+    // ---- META ----
     meta = await loadModel('/models/meta2.glb');
     meta.scale.setScalar(1);
     meta.position.set(0, 0, -50);
     meta.type = "goal";
-    meta.velocity = new THREE.Vector3(0, 0, 0.09); 
+    meta.velocity = new THREE.Vector3(0, 0, 0.09);
     scene.add(meta);
 
     // ---- OVNI FINAL ----
@@ -352,7 +353,7 @@ export async function loadLevel1(scene, physics) {
     scene.add(ovniFinal);
 
     // ---- THE MOOON ----
-  
+
     moon = await loadModel('/models/Planets/Moon.glb');
     moon.scale.setScalar(8);
     moon.position.set(
@@ -361,12 +362,12 @@ export async function loadLevel1(scene, physics) {
       meta.position.z + -10
     );
     scene.add(moon);
-    
+
     {
       const dx = moon.position.x - meta.position.x;
       const dz = moon.position.z - meta.position.z;
       const radius = Math.hypot(dx, dz);
-      const angle  = Math.atan2(dz, dx);
+      const angle = Math.atan2(dz, dx);
 
       moonOrbit = {
         radius,
@@ -393,12 +394,12 @@ export async function loadLevel1(scene, physics) {
 
   //Cambiar probabilidades
   function getRandomModel() {
-      const r = Math.random();
+    const r = Math.random();
 
-      if (r < 0.25) return baseEsmeralda;   // 30%  ↓ menos
-      if (r < 0.55) return baseDiamante;    // 25%
-      if (r < 0.75) return baseAsteroid;    // 20%
-      return baseThunder;                   // 25%  ↑ más
+    if (r < 0.25) return baseEsmeralda;   // 30%  ↓ menos
+    if (r < 0.55) return baseDiamante;    // 25%
+    if (r < 0.75) return baseAsteroid;    // 20%
+    return baseThunder;                   // 25%  ↑ más
   }
 
   function cloneModel(model) {
@@ -416,7 +417,7 @@ export async function loadLevel1(scene, physics) {
   const enemies = [];
   let frames = 0;
   let spawnRate = 180;
-  
+
   function removeEnemy(enemy) {
     enemy.removeFromParent();
     const i = enemies.indexOf(enemy);
@@ -486,21 +487,21 @@ export async function loadLevel1(scene, physics) {
     }, 1000);
     // 🔥 CADA 3 SEGUNDOS SE PIERDE 1 ESMERALDA EN MODO DIFÍCIL
     gameState.damageInterval = setInterval(() => {
-        if (gameState.paused) return;
+      if (gameState.paused) return;
 
-        gameState.esmeraldas--;
-        esmeraldasHUD.textContent = gameState.esmeraldas;
+      gameState.esmeraldas--;
+      esmeraldasHUD.textContent = gameState.esmeraldas;
 
-        console.log("💀 Esmeralda perdida. Restantes:", gameState.esmeraldas);
+      console.log("💀 Esmeralda perdida. Restantes:", gameState.esmeraldas);
 
-        // Si se queda sin esmeraldas → Game Over
-        if (gameState.esmeraldas <= 0) {
-            clearInterval(gameState.damageInterval);
-            clearInterval(gameState.timeInterval);
-            gameState.paused = true;
-            bernice.isFrozen = true;
-            mostrarGameOver();
-        }
+      // Si se queda sin esmeraldas → Game Over
+      if (gameState.esmeraldas <= 0) {
+        clearInterval(gameState.damageInterval);
+        clearInterval(gameState.timeInterval);
+        gameState.paused = true;
+        bernice.isFrozen = true;
+        mostrarGameOver();
+      }
 
     }, 3000); // 🔥 Cada 3 segundos
 
@@ -750,28 +751,28 @@ export async function loadLevel1(scene, physics) {
   let ovniTime = 0;
 
   // distancia detrás de la meta
-  let finalTargetOffset = -5; 
+  let finalTargetOffset = -5;
 
 
   function animate() {
-  
+
     requestAnimationFrame(animate);
     if (gameState.paused) return;
     // ---- OVNI FINAL (si existe) ----
     if (ovniFinal && meta) {
-        ovniTime += 0.03;
+      ovniTime += 0.03;
 
-        // --- Movimiento lateral independiente ---
-        ovniFinal.position.x = Math.sin(ovniTime * 0.6) * 10;
+      // --- Movimiento lateral independiente ---
+      ovniFinal.position.x = Math.sin(ovniTime * 0.6) * 10;
 
-        // --- Flotación vertical suave ---
-        ovniFinal.position.y = meta.position.y + 20 + Math.sin(ovniTime * 2) * 2;
+      // --- Flotación vertical suave ---
+      ovniFinal.position.y = meta.position.y + 20 + Math.sin(ovniTime * 2) * 2;
 
-        // --- Mantenerse cerca de la meta en Z ---
-        ovniFinal.position.z = meta.position.z + 5;
+      // --- Mantenerse cerca de la meta en Z ---
+      ovniFinal.position.z = meta.position.z + 5;
 
-        // --- Rotación del ovni ---
-        ovniFinal.rotation.y += 0.01;
+      // --- Rotación del ovni ---
+      ovniFinal.rotation.y += 0.01;
     }
 
 
@@ -783,7 +784,6 @@ export async function loadLevel1(scene, physics) {
       if (berniceBBox.intersectsBox(metaBBox)) {
         // Marcamos fin de partida
         gameState.ended = true;
-
         // Animación de victoria
         if (bernice.controller && bernice.controller.win) {
           playWin();
@@ -801,6 +801,15 @@ export async function loadLevel1(scene, physics) {
           mostrarWin();
         }, 5000);
 
+        //Se envían los datos a la base
+        const dificultad = localStorage.getItem("dificultad");
+        enviarPuntos({
+          nivel: 1,
+          dificultad,
+          esmeraldas: gameState.esmeraldas,
+          diamantes: gameState.diamantes,
+          tiempo_final: gameState.timeLeft
+        });
         return;
       }
     }
@@ -844,7 +853,7 @@ export async function loadLevel1(scene, physics) {
 
     // ---- LIMITES ----
     if (bernice.position.x < -LIMIT_X) bernice.position.x = -LIMIT_X;
-    if (bernice.position.x > LIMIT_X)  bernice.position.x = LIMIT_X;
+    if (bernice.position.x > LIMIT_X) bernice.position.x = LIMIT_X;
 
     if (bernice.position.z < MIN_Z) bernice.position.z = MIN_Z;
     if (bernice.position.z > MAX_Z) bernice.position.z = MAX_Z;
@@ -892,7 +901,7 @@ export async function loadLevel1(scene, physics) {
           gameState.esmeraldas--;
           esmeraldasHUD.textContent = gameState.esmeraldas;
 
-          if (bernice.controller && bernice.controller.takeDamage){
+          if (bernice.controller && bernice.controller.takeDamage) {
             bernice.controller.takeDamage();
           }
           if (gameState.esmeraldas <= 0 && !gameState.ended) {
@@ -937,39 +946,39 @@ export async function loadLevel1(scene, physics) {
 
     });
 
-   // ---- SPAWNEO ----
+    // ---- SPAWNEO ----
     if (frames % spawnRate === 0) {
 
-        // aceleramos spawn
-        if (spawnRate > 30) spawnRate -= 10;
+      // aceleramos spawn
+      if (spawnRate > 30) spawnRate -= 10;
 
-        // 👉 Si ya generamos 50 objetos, solo spawnear META
+      // 👉 Si ya generamos 50 objetos, solo spawnear META
       if (spawnCount >= MAX_SPAWN) {
 
-          if (!metaSpawned) {
-              spawnMeta();   // solo una vez
-          }
+        if (!metaSpawned) {
+          spawnMeta();   // solo una vez
+        }
 
-          // ❌ NO return
-          // El juego sigue normalmente
+        // ❌ NO return
+        // El juego sigue normalmente
       } else {
 
-          // ✔ generar enemigos normales
-          const model = getRandomModel();
-          const enemy = cloneModel(model);
+        // ✔ generar enemigos normales
+        const model = getRandomModel();
+        const enemy = cloneModel(model);
 
-          const laneX = [-12, -6, 0, 6, 12];
-          enemy.position.set(laneX[Math.floor(Math.random() * laneX.length)], 1.2, -50);
+        const laneX = [-12, -6, 0, 6, 12];
+        enemy.position.set(laneX[Math.floor(Math.random() * laneX.length)], 1.2, -50);
 
-          enemy.velocity = new THREE.Vector3(0, 0, 0.03);
-          enemy.zAcceleration = true;
-          enemy.bbox = new THREE.Box3().setFromObject(enemy);
+        enemy.velocity = new THREE.Vector3(0, 0, 0.03);
+        enemy.zAcceleration = true;
+        enemy.bbox = new THREE.Box3().setFromObject(enemy);
 
-          scene.add(enemy);
-          enemies.push(enemy);
+        scene.add(enemy);
+        enemies.push(enemy);
 
-          spawnCount++;
-          console.log(`🟡 OBJETOS GENERADOS: ${spawnCount}/${MAX_SPAWN}`);
+        spawnCount++;
+        console.log(`🟡 OBJETOS GENERADOS: ${spawnCount}/${MAX_SPAWN}`);
 
       }
 
@@ -979,22 +988,22 @@ export async function loadLevel1(scene, physics) {
 
     // ---- MOVIMIENTO DE OBJETOS ----
     enemies.forEach(enemy => {
-      
-      if (enemy.type === "asteroid") {
-          // ⚡ Rotación más caótica
-          enemy.rotation.x += 0.015 * globalSpeedMultiplier;
-          enemy.rotation.y += 0.01  * globalSpeedMultiplier;
-          enemy.rotation.z += 0.02  * globalSpeedMultiplier;
 
-          // 🔥 “Tambaleo”
-          enemy.position.y += Math.sin(Date.now() * 0.005 + enemy.position.x) * 0.01;
-          
+      if (enemy.type === "asteroid") {
+        // ⚡ Rotación más caótica
+        enemy.rotation.x += 0.015 * globalSpeedMultiplier;
+        enemy.rotation.y += 0.01 * globalSpeedMultiplier;
+        enemy.rotation.z += 0.02 * globalSpeedMultiplier;
+
+        // 🔥 “Tambaleo”
+        enemy.position.y += Math.sin(Date.now() * 0.005 + enemy.position.x) * 0.01;
+
       } else {
-          // Animación normal de diamantes, esmeraldas, thunder
-          enemy.position.y += Math.sin(Date.now() * 0.003 + enemy.position.x) * 0.005;
-          enemy.rotation.y += 0.02 * globalSpeedMultiplier;
+        // Animación normal de diamantes, esmeraldas, thunder
+        enemy.position.y += Math.sin(Date.now() * 0.003 + enemy.position.x) * 0.005;
+        enemy.rotation.y += 0.02 * globalSpeedMultiplier;
       }
-    
+
       // velocidad general aplicada aquí 🔥
       enemy.position.addScaledVector(enemy.velocity, globalSpeedMultiplier);
 
@@ -1004,7 +1013,7 @@ export async function loadLevel1(scene, physics) {
     });
 
 
-     // ---- MOVER META ----
+    // ---- MOVER META ----
     if (meta) {
       meta.position.addScaledVector(meta.velocity, globalSpeedMultiplier);
     }
@@ -1030,7 +1039,7 @@ export async function loadLevel1(scene, physics) {
         scenery.splice(i, 1);
       }
     }
-        // ---- ÓRBITA DE MERCURIO Y VENUS ALREDEDOR DEL SOL ----
+    // ---- ÓRBITA DE MERCURIO Y VENUS ALREDEDOR DEL SOL ----
     if (sun) {
       if (mercuryOrbit) {
         mercuryOrbit.angle += mercuryOrbit.speed;

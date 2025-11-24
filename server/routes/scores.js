@@ -1,3 +1,4 @@
+// server/routes/scores.js
 import { Router } from "express";
 import { saveScore, getLeaderboard } from "../controllers/scoresController.js";
 
