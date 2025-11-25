@@ -82,13 +82,25 @@ export async function loadLevelM(scene) {
     // ===================================
     // 🔹 HUD COMPARTIDO
     // ===================================
-    const esmeraldasHUD = document.getElementById("vida");
-    const diamondsHUD = document.getElementById("score");
-    const tiempoHUD = document.getElementById("tiempo");
-    const thunderHUD = document.getElementById("poteciador");
+    const esmeraldasHUD = document.getElementById("vida");        // Vida
+    const diamondsHUD = document.getElementById("score");         // Puntos
+    const tiempoHUD = document.getElementById("tiempo");          // Temporizador
+    const thunderHUD = document.getElementById("poteciador");     // Boost
+
+    if (!esmeraldasHUD || !diamondsHUD || !tiempoHUD || !thunderHUD) {
+        console.error("❌ ERROR: No se encontraron elementos del HUD");
+        console.log("Elementos disponibles:", {
+            vida: esmeraldasHUD,
+            score: diamondsHUD,
+            tiempo: tiempoHUD,
+            poteciador: thunderHUD
+        });
+    }
 
     esmeraldasHUD.textContent = gameState.esmeraldas;
     diamondsHUD.textContent = gameState.diamantes;
+    tiempoHUD.textContent = "00:00";
+    thunderHUD.textContent = "0";
 
     // ===================================
     // 🔹 LUCES
@@ -133,7 +145,11 @@ export async function loadLevelM(scene) {
     // ===================================
     const bernice = await loadModel('/models/Bernice.fbx');
     bernice.name = "BerniceLocal";
-    bernice.position.set(-5, 0, 20);
+    
+    // ✅ Host a la izquierda (-5), Guest a la derecha (5)
+    const localX = isHost ? -5 : 5;
+    bernice.position.set(localX, 0, 20);
+    
     bernice.scale.setScalar(0.06);
     bernice.rotation.y = Math.PI;
     bernice.isFrozen = false;
@@ -142,14 +158,18 @@ export async function loadLevelM(scene) {
 
     const berniceBBox = new THREE.Box3().setFromObject(bernice);
 
-    console.log("✅ Bernice (Jugador Local) cargada");
+    console.log(`✅ Bernice (Jugador Local) cargada en X=${localX}`);
 
     // ===================================
     // 🔹 JUGADOR REMOTO (TEXTURA DIFERENTE)
     // ===================================
     const ghostPlayer = await loadModel('/models/Bernice.fbx');
     ghostPlayer.name = "BerniceRemote";
-    ghostPlayer.position.set(5, 0, 20);
+    
+    // ✅ Posición opuesta al jugador local
+    const remoteX = isHost ? 5 : -5;
+    ghostPlayer.position.set(remoteX, 0, 20);
+    
     ghostPlayer.scale.setScalar(0.06);
     ghostPlayer.rotation.y = Math.PI;
 
@@ -234,6 +254,25 @@ export async function loadLevelM(scene) {
     const MIN_Z = -10;
     const MAX_Z = 50;
 
+    // ⏱️ TEMPORIZADOR
+    let gameTime = 0;  // Tiempo en segundos
+
+    function formatTime(seconds) {
+        const min = Math.floor(seconds / 60).toString().padStart(2, "0");
+        const sec = (seconds % 60).toString().padStart(2, "0");
+        return `${min}:${sec}`;
+    }
+
+    // Solo el host actualiza el tiempo
+    if (isHost) {
+        setInterval(() => {
+            if (!gameState.paused) {
+                gameTime++;
+                tiempoHUD.textContent = formatTime(gameTime);
+            }
+        }, 1000);
+    }
+
     // ===================================
     // 🔹 PANTALLAS
     // ===================================
@@ -270,7 +309,7 @@ export async function loadLevelM(scene) {
     }
 
     // ===================================
-    // 🔹 SPAWN META (SOLO HOST)
+    // SPAWN META (SOLO HOST)
     // ===================================
     async function spawnMeta() {
         if (metaSpawned || !isHost) return;
@@ -295,11 +334,11 @@ export async function loadLevelM(scene) {
     }
 
     // ===================================
-    // 🎮 SINCRONIZACIÓN MULTIJUGADOR
+    // SINCRONIZACIÓN MULTIJUGADOR
     // ===================================
     let syncCounter = 0;
 
-    // 📥 GUEST: Escuchar estado del juego
+    // GUEST: Escuchar estado del juego
     if (!isHost) {
         roomManager.listenToGameState((data) => {
             gameState.esmeraldas = data.esmeraldas;
@@ -314,6 +353,26 @@ export async function loadLevelM(scene) {
             esmeraldasHUD.textContent = gameState.esmeraldas;
             diamondsHUD.textContent = gameState.diamantes;
             thunderHUD.textContent = gameState.thunderActive ? `${gameState.thunderTime}s` : "0";
+            
+            // Sincronizar temporizador
+            if (data.gameTime !== undefined) {
+                tiempoHUD.textContent = formatTime(data.gameTime);
+            }
+
+            // Verificar estado del juego (Victoria/Derrota)
+            if (data.gameStatus === "won" && !gameState.paused) {
+                console.log("🏆 ¡GUEST: Ganaste!");
+                gameState.paused = true;
+                bernice.isFrozen = true;
+                ghostPlayer.isFrozen = true;
+                mostrarWin();
+            } else if (data.gameStatus === "lost" && !gameState.paused) {
+                console.log("💀 GUEST: Game Over");
+                gameState.paused = true;
+                bernice.isFrozen = true;
+                ghostPlayer.isFrozen = true;
+                mostrarGameOver();
+            }
 
             // Spawn meta si es necesario
             if (metaSpawned && !meta) {
@@ -321,7 +380,7 @@ export async function loadLevelM(scene) {
             }
         });
 
-        // 📥 GUEST: Escuchar objetos del host
+        // GUEST: Escuchar objetos del host
         roomManager.listenToObjects((objects) => {
             if (!objects) return; // Si no hay objetos, salir
 
@@ -365,7 +424,7 @@ export async function loadLevelM(scene) {
         });
     }
 
-    // 📥 Escuchar posición del otro jugador
+    // Escuchar posición del otro jugador
     roomManager.listenToOtherPlayers((otherPlayers) => {
         if (otherPlayers.length > 0) {
             const remote = otherPlayers[0];
@@ -382,7 +441,7 @@ export async function loadLevelM(scene) {
         }
     });
 
-    // 📥 HOST: Escuchar colisiones del guest
+    // HOST: Escuchar colisiones del guest
     if (isHost) {
         roomManager.listenToCollisions((collision) => {
             console.log(`📩 HOST recibió colisión del guest:`, collision);
@@ -435,7 +494,22 @@ export async function loadLevelM(scene) {
     }
 
     // ===================================
-    // 🔁 LOOP PRINCIPAL
+    // LIMPIAR SALA AL CERRAR VENTANA
+    // ===================================
+    window.addEventListener('beforeunload', async () => {
+        console.log("🚪 Jugador saliendo de la sala...");
+        await roomManager.leaveRoom();
+    });
+
+    // También detectar cuando el juego se pausa por inactividad
+    document.addEventListener('visibilitychange', async () => {
+        if (document.hidden) {
+            console.log("📴 Pestaña oculta, considerando salida...");
+        }
+    });
+
+    // ===================================
+    // LOOP PRINCIPAL
     // ===================================
     function animate() {
         if (gameState.paused) return;
@@ -516,7 +590,9 @@ export async function loadLevelM(scene) {
                 const metaBBox = new THREE.Box3().setFromObject(meta);
                 if (berniceBBox.intersectsBox(metaBBox)) {
                     gameState.paused = true;
+                    gameState.gameStatus = "won";  // ← Marcar como ganado
                     bernice.isFrozen = true;
+                    ghostPlayer.isFrozen = true;
                     mostrarWin();
                     return;
                 }
@@ -632,7 +708,7 @@ export async function loadLevelM(scene) {
                 }
             });
 
-            // 📤 Enviar estado cada 6 frames (100ms aprox, 10 FPS)
+            // Enviar estado cada 6 frames (100ms aprox, 10 FPS)
             if (frames % 6 === 0) {
                 roomManager.updateGameState({
                     esmeraldas: gameState.esmeraldas,
@@ -642,7 +718,8 @@ export async function loadLevelM(scene) {
                     globalSpeedMultiplier,
                     spawnCount,
                     metaSpawned,
-                    frames
+                    frames,
+                    gameTime  // ← Enviar tiempo de juego
                 }).catch(err => console.error("Error actualizando gameState:", err));
 
                 roomManager.updateObjects(Object.values(enemies))

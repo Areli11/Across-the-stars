@@ -5,6 +5,7 @@ import { gameState } from '../core/gameState.js';
 import { input } from '../core/input.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { playExplosion, playCoin, playSpeed, playHealing, playWin } from '../systems/sfx.js';
+import { enviarPuntos } from "../api/enviarPuntos.js";
 
 export async function loadLevel2(scene, physics) {
 
@@ -890,6 +891,16 @@ if (gltfRocket.animations && gltfRocket.animations.length > 0) {
           if (gameState.timeInterval) clearInterval(gameState.timeInterval);
           mostrarWin();
         }, 5000);
+
+        //Se envían los datos a la base
+        const dificultad = localStorage.getItem("dificultad");
+        enviarPuntos({
+          nivel: 2,
+          dificultad,
+          esmeraldas: gameState.esmeraldas,
+          diamantes: gameState.diamantes,
+          tiempo_final: gameState.timeLeft
+        });
 
         return;
       }

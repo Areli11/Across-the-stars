@@ -226,6 +226,7 @@ export class RoomManager {
             spawnCount: gameData.spawnCount,
             metaSpawned: gameData.metaSpawned,
             frames: gameData.frames,
+            gameTime: gameData.gameTime || 0,  // ← Agregar tiempo de juego
             timestamp: Date.now()
         });
     }

@@ -3,6 +3,7 @@ import { loadModel } from '../core/assets.js';
 import { gameState } from '../core/gameState.js';
 import { input } from '../core/input.js';
 import { playExplosion, playCoin, playSpeed, playHealing, playWin } from '../systems/sfx.js';
+import { enviarPuntos } from "../api/enviarPuntos.js";
 
 export async function loadLevel3(scene, physics) {
 
@@ -1030,6 +1031,16 @@ export async function loadLevel3(scene, physics) {
           if (gameState.timeInterval) clearInterval(gameState.timeInterval);
           mostrarWin();
         }, 5000);
+
+        //Se envían los datos a la base
+        const dificultad = localStorage.getItem("dificultad");
+        enviarPuntos({
+          nivel: 3,
+          dificultad,
+          esmeraldas: gameState.esmeraldas,
+          diamantes: gameState.diamantes,
+          tiempo_final: gameState.timeLeft
+        });
 
         return;
       }
